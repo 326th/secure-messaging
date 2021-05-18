@@ -1,5 +1,6 @@
 package th.ku.message.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import th.ku.message.model.User;
 import th.ku.message.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,24 +19,30 @@ public class AuthenticationService  implements AuthenticationProvider {
     private UserRepository repository;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private HashService hashService;
 
     @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    public Authentication authenticate(Authentication authentication)
+            throws AuthenticationException {
+
         String username = authentication.getName();
         String password = authentication.getCredentials().toString();
 
         User user = repository.findByUsername(username);
         if (user != null) {
-            String salt = user.getSalt();
-            String hashedPassword = hashService.getHashedValue(password, salt);
-            if (user.getPassword().equals(hashedPassword)) {
-                return new UsernamePasswordAuthenticationToken(username, password, new ArrayList<>());
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                return
+                        new UsernamePasswordAuthenticationToken(username,
+                                password, new ArrayList<>());
             }
         }
 
         return null;
     }
+
 
     @Override
     public boolean supports(Class<?> authentication) {
